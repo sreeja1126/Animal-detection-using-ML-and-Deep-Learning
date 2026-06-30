@@ -1,21 +1,55 @@
-# Animal-detection-using-ML-and-Deep-Learning
+# Animal Detection using ML and Deep Learning
 
+An image classification project that identifies animal species from photos using transfer learning. CNN-extracted features (via a pretrained MobileNetV2) are fed into traditional ML classifiers (SVM and Random Forest), comparing how each performs on top of the same deep feature representation.
 
-## Description
-This project classifies animals using machine learning and deep learning techniques.
+## Dataset
 
-## Tech Stack
-- Python
-- TensorFlow / Keras
-- OpenCV
-- Google Colab
+- 6 animal classes: **hyena, fox, wolf, tiger, cheetah, lion**
+- 5,169 total images (multiple resolutions per class: 224px, 300px, 512px)
+- 80/20 train-test split
 
-## Features
-- Image classification of animals
-- Model training and evaluation
-- Predicts animal from input image
+## Approach
 
-## How to Run
-1. Open notebook in Google Colab
-2. Upload dataset
-3. Run all cells
+Rather than training a CNN end-to-end, this project uses **transfer learning for feature extraction**:
+
+1. Images are resized to 128×128 and passed through **MobileNetV2** (pretrained on ImageNet, top classification layer removed)
+2. A `GlobalAveragePooling2D` layer converts the CNN's feature maps into a single 1,280-dimensional feature vector per image
+3. These CNN-extracted features (not raw pixels) are used to train two separate classifiers:
+   - **Support Vector Machine** (RBF kernel, C=10)
+   - **Random Forest** (200 estimators)
+4. Each classifier is evaluated on the held-out test set with accuracy, confusion matrix, and a full classification report
+
+## Results
+
+| Model | Accuracy |
+|---|---|
+| CNN (MobileNetV2) + SVM | **99.42%** |
+| CNN (MobileNetV2) + Random Forest | **99.23%** |
+
+Both models achieved per-class precision, recall, and F1-scores between 0.97 and 1.00 across all 6 animal classes, with no class showing a significant weak spot. SVM slightly outperformed Random Forest, though the margin is small enough that either is a strong choice on this feature representation.
+
+## Tech stack
+
+- **Python**
+- **TensorFlow / Keras** — MobileNetV2 pretrained model, feature extraction
+- **scikit-learn** — SVM, Random Forest, train/test split, evaluation metrics
+- **OpenCV** — image loading and resizing
+- **Matplotlib / Seaborn** — confusion matrices and result visualization
+- **Google Colab** — development and training environment (GPU-backed)
+
+## How to run
+
+1. Open the desired notebook (`ANIMAL_PREDICTION__SVM_CNN.ipynb` or `Animal_prediction_Randomforest_CNN.ipynb`) in Google Colab
+2. Mount Google Drive and place `animal_dataset.zip` in `MyDrive/dataset/`
+3. Run all cells — the notebook will unzip the dataset, extract CNN features, train the classifier, and output accuracy plus a confusion matrix and classification report
+
+## Why CNN features + classical ML instead of an end-to-end CNN?
+
+Training a CNN from scratch needs a large dataset to avoid overfitting. By using MobileNetV2's pretrained ImageNet features as a fixed feature extractor, this approach gets strong, general-purpose visual features without needing to train millions of parameters from scratch — then lets a lightweight classifier (SVM or Random Forest) learn the decision boundary on top. This is a practical, resource-efficient approach to image classification on a moderately sized dataset.
+
+## What I'd improve next
+
+- Fine-tune the last few MobileNetV2 layers instead of using it purely as a frozen feature extractor, to see if accuracy improves further
+- Add a held-out validation set (currently only train/test) to better guard against overfitting to the test set
+- Complete and fix the Decision Tree comparison (the current version has a data-loading bug and doesn't run end-to-end) to get a genuine three-way comparison
+- Test on images outside the original dataset distribution to check real-world generalization
